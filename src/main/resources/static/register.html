@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>登录页面</title>
+    <title>注册页面</title>
     <style>
         body {
             margin: 0;
@@ -49,7 +49,7 @@
             margin-bottom: 6px;
             color: #475569;
         }
-        input[type="text"], input[type="password"] {
+        input[type="text"], input[type="email"], input[type="password"] {
             width: 100%;
             padding: 12px;
             border: 1px solid #e2e8f0;
@@ -60,21 +60,6 @@
         input:focus {
             border-color: #38bdf8;
             box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
-        }
-        .flex {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.875rem;
-            color: #64748b;
-            margin-bottom: 16px;
-        }
-        .flex a {
-            color: #0ea5e9;
-            text-decoration: none;
-        }
-        .flex a:hover {
-            text-decoration: underline;
         }
         .msg {
             font-size: 0.875rem;
@@ -124,40 +109,40 @@
 </head>
 <body>
 <div class="card">
-    <h1>欢迎回来</h1>
-    <p class="sub">使用用户名和密码登录你的账号</p>
+    <h1>创建账号</h1>
+    <p class="sub">注册一个新账号开始使用</p>
 
-    <form id="loginForm">
+    <form id="registerForm">
         <label>
             <div>用户名</div>
-            <input type="text" id="username" placeholder="请输入用户名" />
+            <input type="text" id="username" placeholder="请输入用户名" required />
+        </label>
+        <label>
+            <div>邮箱</div>
+            <input type="email" id="email" placeholder="请输入邮箱" required />
         </label>
         <label>
             <div>密码</div>
-            <input type="password" id="password" placeholder="请输入密码" />
+            <input type="password" id="password" placeholder="请输入密码" required />
         </label>
-
-        <div class="flex">
-            <label><input type="checkbox" /> 记住我</label>
-            <a href="#">忘记密码?</a>
-        </div>
 
         <div id="msg"></div>
 
-        <button type="submit" id="loginBtn">登 录</button>
+        <button type="submit" id="registerBtn">注 册</button>
     </form>
 
     <footer>
-        还没有账号？ <a href="/register.html">立即注册</a>
+        已有账号？ <a href="/login.html">立即登录</a>
     </footer>
 </div>
 
 <script>
-    const form = document.getElementById("loginForm");
+    const form = document.getElementById("registerForm");
     const usernameInput = document.getElementById("username");
+    const emailInput = document.getElementById("email");
     const passwordInput = document.getElementById("password");
     const msgDiv = document.getElementById("msg");
-    const loginBtn = document.getElementById("loginBtn");
+    const registerBtn = document.getElementById("registerBtn");
 
     function showMsg(text, type) {
         msgDiv.textContent = text;
@@ -169,10 +154,15 @@
         msgDiv.textContent = "";
 
         const username = usernameInput.value.trim();
+        const email = emailInput.value.trim();
         const password = passwordInput.value;
 
         if (username.length < 2) {
             showMsg("用户名至少 2 个字符", "error");
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showMsg("请输入有效的邮箱地址", "error");
             return;
         }
         if (password.length < 4) {
@@ -180,35 +170,32 @@
             return;
         }
 
-        loginBtn.disabled = true;
-        loginBtn.textContent = "登录中...";
+        registerBtn.disabled = true;
+        registerBtn.textContent = "注册中...";
 
         try {
-            const body = new URLSearchParams();
-            body.append("username", username);
-            body.append("password", password);
-
-            const res = await fetch("/users/login", {
+            const res = await fetch("/users/register", {
                 method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-                body: body.toString()
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, email, passwordHash: password })
             });
 
             const data = await res.json();
 
             if (!res.ok) {
-                showMsg(data.msg || data.message || `登录失败 (${res.status})`, "error");
+                showMsg(data.message || `注册失败 (${res.status})`, "error");
             } else {
-                showMsg("登录成功：" + (data.user?.username || username), "success");
+                showMsg("注册成功：" + (data.user?.username || username), "success");
                 usernameInput.value = "";
+                emailInput.value = "";
                 passwordInput.value = "";
-                window.location.href = data.redirectUrl || "/myforum"; // data.redirectUrl 后端返回跳转地址，默认跳到 /dashboard
+                setTimeout(() => window.location.href = "/login.html", 1000); // 自动跳转到登录页
             }
         } catch (err) {
             showMsg("网络错误: " + err.message, "error");
         } finally {
-            loginBtn.disabled = false;
-            loginBtn.textContent = "登 录";
+            registerBtn.disabled = false;
+            registerBtn.textContent = "注 册";
         }
     });
 </script>
