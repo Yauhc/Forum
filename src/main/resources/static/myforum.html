@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>MyForum · 首页</title>
+    <style>
+        :root{
+            --bg:#f5f8fb;
+            --card:#ffffff;
+            --muted:#64748b;
+            --accent1:#0ea5e9;
+            --accent2:#6366f1;
+            --shadow: 0 6px 20px rgba(15,23,42,0.08);
+            --radius:12px;
+            --maxw:1100px;
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","PingFang SC","Hiragino Sans GB", "Microsoft YaHei",Arial;
+            background:linear-gradient(180deg,#f8fbff 0%,var(--bg) 100%);
+            color:#0f172a;
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+            padding:36px 20px;
+            display:flex;
+            justify-content:center;
+        }
+        .wrap{width:100%;max-width:var(--maxw);}
+        header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:16px;
+            margin-bottom:24px;
+        }
+        .logo{
+            display:flex;
+            gap:12px;
+            align-items:center;
+        }
+        .logo .mark{
+            width:48px;height:48px;border-radius:10px;
+            background:linear-gradient(135deg,var(--accent1),var(--accent2));
+            display:flex;align-items:center;justify-content:center;color:white;font-weight:700;
+            box-shadow:var(--shadow);
+        }
+        .logo h1{margin:0;font-size:20px}
+        nav{display:flex;gap:12px;align-items:center}
+        nav a{color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:8px;}
+        nav a:hover{background:#eef6ff;color:var(--accent1)}
+        .top-actions{display:flex;gap:10px;align-items:center}
+        .btn{
+            padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;
+            background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#fff; box-shadow:var(--shadow);
+        }
+        .btn.secondary{background:#fff;color:var(--accent1);border:1px solid rgba(99,102,241,0.08);box-shadow:none}
+        .layout{display:grid;grid-template-columns: 1fr 340px; gap:20px;}
+        @media (max-width:960px){ .layout{grid-template-columns:1fr} .sidebar{order:2} }
+        .feed{display:flex;flex-direction:column;gap:16px}
+        .post{
+            background:var(--card);padding:18px;border-radius:var(--radius);box-shadow:var(--shadow);
+            display:flex;gap:14px;align-items:flex-start;
+        }
+        .post .meta{min-width:84px;text-align:center;color:var(--muted);font-size:12px}
+        .post .meta .forum{background:#eef2ff;color:#4338ca;padding:6px 8px;border-radius:8px;font-weight:600;display:inline-block}
+        .post .body{flex:1}
+        .post .title{margin:0;font-size:18px;color:#0f172a}
+        .post .excerpt{margin:8px 0;color:var(--muted);line-height:1.5}
+        .post .footer{display:flex;gap:12px;align-items:center;font-size:13px;color:var(--muted)}
+        .post .avatar{width:44px;height:44px;border-radius:10px;background:#eef2f7;display:flex;align-items:center;justify-content:center;font-weight:700;color:#1e293b}
+        .sidebar{position:relative}
+        .card-box{background:var(--card);padding:16px;border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px}
+        .search{display:flex;gap:8px}
+        .search input{flex:1;padding:10px;border-radius:10px;border:1px solid #e6eef9}
+        .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#f1f5f9;color:var(--muted);margin:4px 6px 4px 0;font-size:13px;cursor:pointer}
+        .empty{padding:28px;text-align:center;color:var(--muted)}
+        .pager{display:flex;gap:8px;justify-content:center;margin-top:10px}
+        .small{font-size:13px;color:var(--muted)}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div class="logo">
+            <div class="mark">F</div>
+            <div>
+                <h1>MyForum</h1>
+                <div class="small">言论有温度，讨论有光芒</div>
+            </div>
+        </div>
+
+        <div class="top-actions">
+            <nav>
+                <a href="/myforum.html">首页</a>
+                <a href="#">话题</a>
+                <a href="#">关于</a>
+            </nav>
+            <button class="btn secondary" id="btnWrite">写帖子</button>
+            <button class="btn" id="btnLogin">登录 / 注册</button>
+        </div>
+    </header>
+
+    <main class="layout">
+        <section class="feed" id="feed">
+            <!-- 帖子列表由 JS 渲染 -->
+        </section>
+
+        <aside class="sidebar">
+            <div class="card-box">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                    <strong>搜索帖子</strong>
+                    <span class="small">快速定位</span>
+                </div>
+                <div class="search">
+                    <input id="q" placeholder="搜索标题、作者、关键字..." />
+                    <button class="btn secondary" id="btnSearch">搜索</button>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <strong>热门板块</strong>
+                <div style="margin-top:10px" id="hotForums"></div>
+            </div>
+
+            <div class="card-box">
+                <strong>公告</strong>
+                <div class="small" style="margin-top:8px; color:var(--muted)">
+                    项目仍在开发中 — 你可以先试用基本功能，后端接口稳定后再联调更多特性。
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <div class="pager" id="pager"></div>
+</div>
+
+<script src="/index/js/home.js"></script>
+</body>
+</html>

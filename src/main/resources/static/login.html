@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录页面</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to bottom right, #f8fafc, #f0f9ff);
+            font-family: sans-serif;
+        }
+        .card {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            animation: fadeIn 0.45s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            text-align: center;
+        }
+        p.sub {
+            margin: 4px 0 24px;
+            font-size: 0.875rem;
+            color: #64748b;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin-bottom: 16px;
+        }
+        label div {
+            font-size: 0.875rem;
+            margin-bottom: 6px;
+            color: #475569;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+        }
+        input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
+        }
+        .flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 16px;
+        }
+        .flex a {
+            color: #0ea5e9;
+            text-decoration: none;
+        }
+        .flex a:hover {
+            text-decoration: underline;
+        }
+        .msg {
+            font-size: 0.875rem;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .msg.error {
+            color: #dc2626;
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+        }
+        .msg.success {
+            color: #15803d;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: white;
+            background: linear-gradient(to right, #0ea5e9, #6366f1);
+            cursor: pointer;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-top: 16px;
+        }
+        footer a {
+            color: #0ea5e9;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>欢迎回来</h1>
+    <p class="sub">使用用户名和密码登录你的账号</p>
+
+    <form id="loginForm">
+        <label>
+            <div>用户名</div>
+            <input type="text" id="username" placeholder="请输入用户名" />
+        </label>
+        <label>
+            <div>密码</div>
+            <input type="password" id="password" placeholder="请输入密码" />
+        </label>
+
+        <div class="flex">
+            <label><input type="checkbox" /> 记住我</label>
+            <a href="#">忘记密码?</a>
+        </div>
+
+        <div id="msg"></div>
+
+        <button type="submit" id="loginBtn">登 录</button>
+    </form>
+
+    <footer>
+        还没有账号？ <a href="#">立即注册</a>
+    </footer>
+</div>
+
+<script>
+    const form = document.getElementById("loginForm");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const msgDiv = document.getElementById("msg");
+    const loginBtn = document.getElementById("loginBtn");
+
+    function showMsg(text, type) {
+        msgDiv.textContent = text;
+        msgDiv.className = "msg " + type;
+    }
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        msgDiv.textContent = "";
+
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+
+        if (username.length < 2) {
+            showMsg("用户名至少 2 个字符", "error");
+            return;
+        }
+        if (password.length < 4) {
+            showMsg("密码至少 4 个字符", "error");
+            return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = "登录中...";
+
+        try {
+            const body = new URLSearchParams();
+            body.append("username", username);
+            body.append("password", password);
+
+            const res = await fetch("/users/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+                body: body.toString()
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                showMsg(data.msg || data.message || `登录失败 (${res.status})`, "error");
+            } else {
+                showMsg("登录成功：" + (data.user?.username || username), "success");
+                usernameInput.value = "";
+                passwordInput.value = "";
+                window.location.href = data.redirectUrl || "/myforum"; // data.redirectUrl 后端返回跳转地址，默认跳到 /dashboard
+            }
+        } catch (err) {
+            showMsg("网络错误: " + err.message, "error");
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.textContent = "登 录";
+        }
+    });
+</script>
+</body>
+</html>

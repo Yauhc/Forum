@@ -44,13 +44,11 @@ public class UserController {
 
         // 返回注册成功信息（可以返回部分用户信息，不要返回密码）
         return R.ok().put("user", Map.of(
-                "id", user.getId(),
                 "username", user.getUsername(),
                 "email", user.getEmail()
         ));
     }
-
-
+    
     // 登录
     @PostMapping("/login")
     public R login(@RequestParam String username, @RequestParam String password) {
@@ -70,17 +68,12 @@ public class UserController {
                 "id", user.getId(),
                 "username", user.getUsername(),
                 "email", user.getEmail()
-        ));
+        )).put("redirectUrl", "/myforum.html");
     }
 
     @GetMapping("/{id}")
     public String getUser(@PathVariable Long id) {
         return "用户ID: " + id;
-    }
-
-    @PostMapping("/register")
-    public String register(@RequestParam String name) {
-        return "注册成功：" + name;
     }
 
 }

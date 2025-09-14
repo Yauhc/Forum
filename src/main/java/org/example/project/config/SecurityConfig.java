@@ -20,8 +20,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(authorizeRequests -> authorizeRequests.anyRequest().permitAll())
-                .csrf(AbstractHttpConfigurer::disable); // 新 DSL 风格
+                .csrf(AbstractHttpConfigurer::disable) // 新 DSL 风格
+                .authorizeHttpRequests(authorizeRequests -> authorizeRequests.anyRequest().permitAll());
         return http.build();
     }
 }

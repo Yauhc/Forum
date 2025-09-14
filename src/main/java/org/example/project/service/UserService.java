@@ -6,6 +6,4 @@ import org.example.project.entity.UserEntity;
 public interface UserService extends IService<UserEntity> {
     UserEntity findByUsername(String username);
     UserEntity findByEmail(String email);
-
-    boolean save(UserEntity user);
 }
