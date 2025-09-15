@@ -58,18 +58,21 @@ async function loadPosts() {
     feedEl.innerHTML = renderLoading();
     const q = qEl.value.trim();
     try {
-        // 这里按你的后端 API 设计调整查询参数
-        const url = `/posts?page=${page}&size=${pageSize}&q=${encodeURIComponent(q)}`;
+        // 传分页参数
+        const url = `/myforum?page=${page}&size=${pageSize}`;
         const res = await fetch(url, { method: 'GET' });
         if (!res.ok) throw new Error('网络响应非 200');
         const result = await res.json();
 
-        // 兼容后端可能使用 { code:200, data: [...] } 或直接返回数组
-        const posts = (result && result.code === 200) ? result.data : (Array.isArray(result) ? result : result.data);
-        renderPosts(posts || []);
+        // 后端返回的数据结构
+        const posts = (result && result.code === 200) ? result.posts : [];
+        const total = result.total || 0;
+        const pages = result.pages || 1;
+
+        renderPosts(posts || [], total, pages);
     } catch (err) {
         console.warn('加载帖子失败，使用示例数据：', err);
-        renderPosts(samplePosts());
+        renderPosts(samplePosts(), 3, 1);
     }
 }
 
@@ -77,7 +80,7 @@ function renderLoading() {
     return `<div class="card-box empty">加载中…</div>`;
 }
 
-function renderPosts(posts) {
+function renderPosts(posts, total, pages) {
     if (!posts || posts.length === 0) {
         feedEl.innerHTML = `<div class="card-box empty">暂无帖子 — 成为第一个开口的人吧。</div>`;
         pagerEl.innerHTML = '';
@@ -85,17 +88,18 @@ function renderPosts(posts) {
     }
 
     feedEl.innerHTML = posts.map(p => postCard(p)).join('');
-    // 热门版块（简单统计）:
+
+    // 热门版块（简单统计）
     const forums = {};
     posts.forEach(p => { if (p.forum) forums[p.forum] = (forums[p.forum] || 0) + 1; });
     hotForumsEl.innerHTML = Object.keys(forums).slice(0,6).map(f => `<span class="pill">${f} · ${forums[f]}</span>`).join('') || '<div class="small">暂无热门板块</div>';
 
-    // 分页（如果后端支持 total，可以替换）
+    //用 total/pages 来渲染分页
     pagerEl.innerHTML = `
-    <button class="btn secondary" ${page<=1 ? 'disabled' : ''} onclick="pagePrev()">上一页</button>
-    <div style="padding:10px 14px;border-radius:10px;background:#fff">${page}</div>
-    <button class="btn secondary" onclick="pageNext()">下一页</button>
-  `;
+      <button class="btn secondary" ${page<=1 ? 'disabled' : ''} onclick="pagePrev()">上一页</button>
+      <div style="padding:10px 14px;border-radius:10px;background:#fff">${page} / ${pages} 页（共 ${total} 条）</div>
+      <button class="btn secondary" ${page>=pages ? 'disabled' : ''} onclick="pageNext(${pages})">下一页</button>
+    `;
 }
 
 function postCard(p) {
@@ -136,7 +140,7 @@ window.pagePrev = function(){
     if(page>1){ page--; loadPosts(); }
 };
 window.pageNext = function(){
-    page++; loadPosts();
+    if(page<pages){ page++; loadPosts(); }
 };
 
 // 示例数据（当后端不可用时展示）
