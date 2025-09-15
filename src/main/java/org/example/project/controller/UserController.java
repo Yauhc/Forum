@@ -1,5 +1,6 @@
 package org.example.project.controller;
 
+import jakarta.servlet.http.HttpSession;
 import org.example.project.common.R;
 import org.example.project.entity.UserEntity;
 import org.example.project.service.UserService;
@@ -57,7 +58,8 @@ public class UserController {
 
     // 登录
     @PostMapping("/login")
-    public ResponseEntity<R> login(@RequestParam String username, @RequestParam String password) {
+    public ResponseEntity<R> login(@RequestParam String username, @RequestParam String password,
+                                   HttpSession session) {
         // 根据用户名查询用户
         UserEntity user = userService.findByUsername(username);
         if (user == null) {
@@ -70,6 +72,9 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED) // 401
                     .body(R.error(401, "密码错误"));
         }
+
+        // 写入 session，标记登录状态
+        session.setAttribute("user", user);
 
         // 登录成功返回用户信息（不返回密码）
         return ResponseEntity.ok(
@@ -95,4 +100,30 @@ public class UserController {
         )));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<R> me(HttpSession session) {
+        UserEntity user = (UserEntity) session.getAttribute("user");
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED) // 401
+                    .body(R.error(401, "未登录"));
+        }
+
+        return ResponseEntity.ok(
+                R.ok().put("user", Map.of(
+                        "id", user.getId(),
+                        "username", user.getUsername(),
+                        "email", user.getEmail()
+                ))
+        );
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<R> logout(HttpSession session) {
+        session.invalidate(); // 清除 session
+
+        return ResponseEntity.ok(
+                R.ok("已退出登录")
+        );
+    }
 }

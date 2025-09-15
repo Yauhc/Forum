@@ -14,10 +14,37 @@ const qEl = document.getElementById('q');
 let page = 1;
 const pageSize = 10;
 
-document.getElementById('btnLogin').addEventListener('click', () => {
-    // 你已有 login 页面
-    window.location.href = '../login.html';
+document.addEventListener("DOMContentLoaded", async () => {
+    const btnLogin = document.getElementById('btnLogin');
+
+    try {
+        // 向后端查询当前登录状态（你需要写一个 /users/me 或类似接口）
+        const res = await fetch("/users/me");
+        const data = await res.json();
+
+        if (res.ok && data?.user) {
+            // 已登录
+            btnLogin.textContent = data.user.username; // 显示用户名
+            btnLogin.addEventListener('click', () => {
+                // 以后可以加下拉菜单：比如退出登录 / 个人中心
+                window.location.href = '/profile.html';
+            });
+        } else {
+            // 未登录
+            btnLogin.textContent = "登录 / 注册";
+            btnLogin.addEventListener('click', () => {
+                window.location.href = '/login.html';
+            });
+        }
+    } catch (err) {
+        console.error("检查登录状态失败:", err);
+        btnLogin.textContent = "登录 / 注册";
+        btnLogin.addEventListener('click', () => {
+            window.location.href = '/login.html';
+        });
+    }
 });
+
 document.getElementById('btnWrite').addEventListener('click', () => {
     // 跳转到写帖页（如果没有可先跳到登录）
     window.location.href = '../login.html';
