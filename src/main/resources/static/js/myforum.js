@@ -1,11 +1,3 @@
-// 文件位置: src/main/resources/static/js/home.js
-// 简单的前端渲染逻辑：请求 /posts 接口，渲染列表；如果失败则使用示例数据。
-// 期望后端 /posts 返回 JSON:
-// {
-//   code: 200,
-//   data: [{ id, title, excerpt, content, author, createdAt, forum }]
-// }
-
 const feedEl = document.getElementById('feed');
 const hotForumsEl = document.getElementById('hotForums');
 const pagerEl = document.getElementById('pager');
@@ -13,6 +5,30 @@ const qEl = document.getElementById('q');
 
 let page = 1;
 const pageSize = 10;
+
+/**
+ * 检查用户是否登录
+ * @returns {Promise<boolean>} 已登录返回 true，否则跳转登录页并返回 false
+ */
+async function requireLogin() {
+    try {
+        const res = await fetch('/users/me'); // 调用后端接口获取当前登录用户信息
+        const data = await res.json();
+        if (res.ok && data?.user) {
+            // 已登录
+            return true;
+        } else {
+            // 未登录，跳转登录页
+            window.location.href = '/login.html';
+            return false;
+        }
+    } catch (err) {
+        console.error('检查登录状态失败', err);
+        window.location.href = '/login.html';
+        return false;
+    }
+}
+
 
 document.addEventListener("DOMContentLoaded", async () => {
     const btnLogin = document.getElementById('btnLogin');
@@ -45,10 +61,57 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-document.getElementById('btnWrite').addEventListener('click', () => {
-    // 跳转到写帖页（如果没有可先跳到登录）
-    window.location.href = '../login.html';
+const btnWrite = document.getElementById('btnWrite');
+const postModal = document.getElementById('postModal');
+const closeModal = document.getElementById('closeModal');
+const postForm = document.getElementById('postForm');
+
+btnWrite.addEventListener('click', async () => {
+    const loggedIn = await requireLogin();
+    if (!loggedIn) return; // 未登录已跳转，不继续执行
+
+    // 已登录则显示弹窗
+    postModal.style.display = 'flex';
 });
+
+closeModal.addEventListener('click', () => {
+    postModal.style.display = 'none';
+});
+
+window.addEventListener('click', (e) => {
+    if(e.target === postModal){
+        postModal.style.display = 'none';
+    }
+});
+
+postForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(postForm);
+    const data = {
+        title: formData.get('title'),
+        content: formData.get('content'),
+    };
+
+    try {
+        const res = await fetch('/myforum/createPost', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if(res.ok && result.code === 200){
+            alert('发布成功！');
+            postModal.style.display = 'none';
+            loadPosts(); // 刷新帖子列表
+        } else {
+            alert('发布失败: ' + (result.message || '未知错误'));
+        }
+    } catch(err){
+        console.error(err);
+        alert('发布失败，请稍后重试');
+    }
+});
+
 document.getElementById('btnSearch').addEventListener('click', () => {
     page = 1;
     loadPosts();
@@ -59,7 +122,7 @@ async function loadPosts() {
     const q = qEl.value.trim();
     try {
         // 传分页参数
-        const url = `/myforum?page=${page}&size=${pageSize}`;
+        const url = `/myforum/listPosts?page=${page}&size=${pageSize}`;
         const res = await fetch(url, { method: 'GET' });
         if (!res.ok) throw new Error('网络响应非 200');
         const result = await res.json();

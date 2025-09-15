@@ -1,19 +1,17 @@
 package org.example.project.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.servlet.http.HttpSession;
 import org.example.project.common.R;
 import org.example.project.entity.PostEntity;
 import org.example.project.entity.UserEntity;
 import org.example.project.service.PostService;
 import org.example.project.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,7 +26,7 @@ public class MyForumController {
     private UserService userService;
 
     // 获取所有帖子（带分页）
-    @GetMapping
+    @GetMapping("/listPosts")
     public R listPosts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
@@ -61,4 +59,33 @@ public class MyForumController {
                 .put("current", pageData.getCurrent()); // 当前页码
     }
 
+    // 发布帖子
+    @PostMapping("/createPost")
+    public R createPost(@RequestBody Map<String, String> payload, HttpSession session) {
+        // 1. 获取当前登录用户
+        UserEntity user = (UserEntity) session.getAttribute("user");
+        if (user == null) {
+            return R.error("未登录，请先登录");
+        }
+
+        // 2. 获取请求参数
+        String title = payload.get("title");
+        String content = payload.get("content");
+
+        if(title == null || title.isBlank() || content == null || content.isBlank()) {
+            return R.error("标题和内容不能为空");
+        }
+
+        // 3. 构建 PostEntity 并保存
+        PostEntity post = new PostEntity();
+        post.setTitle(title);
+        post.setContent(content);
+        post.setUserId(Long.valueOf(user.getId()));
+        post.setCreatedAt(LocalDateTime.now());
+
+        postService.save(post);
+
+        // 4. 返回成功
+        return R.ok("发布成功").put("postId", post.getId());
+    }
 }
