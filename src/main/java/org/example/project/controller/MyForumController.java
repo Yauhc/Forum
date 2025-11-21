@@ -2,90 +2,103 @@ package org.example.project.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.project.common.R;
+import org.example.project.common.error.ErrorCode;
+import org.example.project.common.exception.BusinessException;
+import org.example.project.dto.PostCreateRequest;
+import org.example.project.dto.PostDto;
+import org.example.project.dto.UserProfileDto;
 import org.example.project.entity.PostEntity;
 import org.example.project.entity.UserEntity;
+import org.example.project.service.CurrentUserResolver;
 import org.example.project.service.PostService;
 import org.example.project.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * フォーラム API。
+ */
+@Slf4j
 @RestController
-@RequestMapping("myforum")
+@RequestMapping("/myforum")
+@RequiredArgsConstructor
 public class MyForumController {
-    @Autowired
-    private PostService postService;
 
-    @Autowired
-    private UserService userService;
+    private final PostService postService;
+    private final UserService userService;
+    private final CurrentUserResolver currentUserResolver;
 
-    // 获取所有帖子（带分页）
+    /**
+     * 投稿一覧を取得する。
+     */
     @GetMapping("/listPosts")
-    public R listPosts(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        // 1. 调用 MyBatis-Plus 的分页方法
+    public R listPosts(@RequestParam(defaultValue = "1") long page,
+                       @RequestParam(defaultValue = "10") long size) {
         Page<PostEntity> pageData = postService.page(new Page<>(page, size));
+        var userIds = pageData.getRecords().stream()
+                .map(PostEntity::getUserId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Map<Long, String> authorMap = userIds.isEmpty() ? Map.of() :
+                userService.listByIds(userIds).stream()
+                        .collect(Collectors.toMap(UserEntity::getId, UserEntity::getUsername));
 
-        // 2. 把 PostEntity 转成 Map，加上 username
-        List<Map<String, ? extends Serializable>> result = pageData.getRecords().stream()
+        List<PostDto> result = pageData.getRecords().stream()
                 .map(post -> {
-                    UserEntity user = userService.getById(post.getUserId());
-                    String username = (user != null) ? user.getUsername() : "未知用户";
-
-                    return Map.of(
-                            "id", post.getId(),
-                            "title", post.getTitle(),
-                            "content", post.getContent(),
-                            "author", username,
-                            "forumId", post.getForumId(),
-                            "createdAt", post.getCreatedAt()
-                    );
+                    PostDto dto = new PostDto();
+                    dto.setId(post.getId());
+                    dto.setTitle(post.getTitle());
+                    dto.setContent(post.getContent());
+                    dto.setForumId(post.getForumId());
+                    dto.setCreatedAt(post.getCreatedAt());
+                    dto.setUpdatedAt(post.getUpdatedAt());
+                    dto.setAuthor(authorMap.getOrDefault(post.getUserId(), "unknown"));
+                    return dto;
                 })
-                .collect(Collectors.toList());
+                .toList();
 
-        // 3. 返回分页结果
         return R.ok()
-                .put("posts", result)         // 当前页的数据
-                .put("total", pageData.getTotal()) // 总记录数
-                .put("pages", pageData.getPages()) // 总页数
-                .put("current", pageData.getCurrent()); // 当前页码
+                .put("posts", result)
+                .put("total", pageData.getTotal())
+                .put("pages", pageData.getPages())
+                .put("current", pageData.getCurrent());
     }
 
-    // 发布帖子
+    /**
+     * 投稿を作成する。
+     */
     @PostMapping("/createPost")
-    public R createPost(@RequestBody Map<String, String> payload, HttpSession session) {
-        // 1. 获取当前登录用户
-        UserEntity user = (UserEntity) session.getAttribute("user");
-        if (user == null) {
-            return R.error("未登录，请先登录");
-        }
+    public ResponseEntity<R> createPost(@Valid @RequestBody PostCreateRequest request, HttpSession session) {
+        UserProfileDto user = currentUserResolver.resolve(session)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED, "ログインしてください"));
 
-        // 2. 获取请求参数
-        String title = payload.get("title");
-        String content = payload.get("content");
-
-        if(title == null || title.isBlank() || content == null || content.isBlank()) {
-            return R.error("标题和内容不能为空");
-        }
-
-        // 3. 构建 PostEntity 并保存
         PostEntity post = new PostEntity();
-        post.setTitle(title);
-        post.setContent(content);
-        post.setUserId(Long.valueOf(user.getId()));
+        post.setTitle(request.getTitle().trim());
+        post.setContent(request.getContent().trim());
+        post.setForumId(request.getForumId());
+        post.setUserId(user.getId());
         post.setCreatedAt(LocalDateTime.now());
+        post.setUpdatedAt(LocalDateTime.now());
 
         postService.save(post);
+        log.info("post created by {} with id {}", user.getUsername(), post.getId());
 
-        // 4. 返回成功
-        return R.ok("发布成功").put("postId", post.getId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(R.ok("投稿しました").put("postId", post.getId()));
     }
 }

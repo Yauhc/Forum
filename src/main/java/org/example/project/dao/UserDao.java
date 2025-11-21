@@ -13,7 +13,7 @@ public interface UserDao extends BaseMapper<UserEntity> {
     @Select("SELECT * FROM users WHERE email = #{email}")
     UserEntity findByEmail(@Param("email")String email);
 
-    @Insert("INSERT INTO users(username, email, password_hash, created_at) " +
-            "VALUES(#{username}, #{email}, #{passwordHash}, NOW())")
+    @Insert("INSERT INTO users(username, email, password_hash, role, created_at, updated_at) " +
+            "VALUES(#{username}, #{email}, #{passwordHash}, #{role}, NOW(), NOW())")
     int insert(UserEntity user);
 }

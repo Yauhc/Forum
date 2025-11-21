@@ -9,9 +9,6 @@ import org.springframework.stereotype.Service;
 
 @Service("userService")
 public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements UserService {
-    @Autowired
-    private UserDao userDao;
-
     @Override
     public UserEntity findByUsername(String username) {
         return lambdaQuery().eq(UserEntity::getUsername, username).one();

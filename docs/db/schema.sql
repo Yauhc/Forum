@@ -1,0 +1,32 @@
+-- ユーザー情報
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    avatar_url VARCHAR(255),
+    bio VARCHAR(255),
+    role VARCHAR(20) NOT NULL DEFAULT 'USER',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
+
+-- 投稿テーブル
+CREATE TABLE IF NOT EXISTS posts (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    forum_id BIGINT,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'PUBLISHED',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_posts_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX idx_posts_forum_id ON posts(forum_id);
+
