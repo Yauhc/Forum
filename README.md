@@ -20,14 +20,30 @@
 1. **環境変数**（`.env` などで管理）  
    | 変数 | 説明 | 既定値 |
    | --- | --- | --- |
-   | `DB_URL` | JDBC 接続 URL | `jdbc:mysql://localhost:3306/forum?...` |
-   | `DB_USERNAME` / `DB_PASSWORD` | DB 認証情報 | `root` / `123456` |
+   | `SPRING_DATASOURCE_URL` | JDBC 接続 URL（`application.yml` を上書き） | `jdbc:mysql://localhost:3306/forum?serverTimezone=Asia/Tokyo&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true` |
+   | `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` | DB 認証情報 | `root` / `123456` |
    | `JWT_SECRET` | 32byte 以上のシークレット | `change-me-...` |
    | `JWT_ACCESS_TTL` | アクセストークン寿命(秒) | `900` |
    | `JWT_REFRESH_TTL` | リフレッシュトークン寿命(秒) | `604800` |
 
 2. **DB 準備**  
    `docs/db/schema.sql` を参考にテーブルを作成するか、`spring.jpa.hibernate.ddl-auto=update` で自動生成を許可します。
+
+   > **MySQL が利用できない場合**  
+   > `local` プロファイルで H2（MySQL 互換モード）を利用できます。  
+   > ```bash
+   > # 例: H2 でアプリを起動
+   > SPRING_PROFILES_ACTIVE=local mvn spring-boot:run
+   > # もしくは
+   > mvn spring-boot:run -Dspring-boot.run.profiles=local
+   > ```  
+   > `application-local.yml` によりメモリ上で DB が初期化され、`docs/db/schema.sql` が自動実行されます。
+   >
+   > **MySQL 8 系のヒント**  
+   > 既定の JDBC URL には `allowPublicKeyRetrieval=true` / `useSSL=false` を含め、`caching_sha2_password` による接続拒否や自己署名証明書の問題を回避しています。必要に応じて `SPRING_DATASOURCE_URL` で上書きしてください。
+   >
+   > **既存テーブルの補正**  
+   > アプリ起動時に `db/migration/V001__ensure_user_timestamps.sql` が自動実行され、`users` テーブルへ `created_at` / `updated_at` カラムを追加します（既に存在する場合は何もしません）。
 
 3. **依存解決 & 起動**
    ```bash

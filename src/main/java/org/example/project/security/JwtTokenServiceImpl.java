@@ -3,6 +3,7 @@ package org.example.project.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -94,7 +95,7 @@ public class JwtTokenServiceImpl implements JwtTokenService {
                 .compact();
     }
 
-    private Jwts.Parser buildParser() {
+    private JwtParser buildParser() {
         return Jwts.parser().verifyWith(secretKey).requireIssuer(jwtProperties.getIssuer()).build();
     }
 }

@@ -13,7 +13,7 @@ import lombok.Data;
 public class UserRegisterDto {
 
     @NotBlank(message = "ユーザー名は必須です")
-    @Size(min = 2, max = 30, message = "ユーザー名は2〜30文字で入力してください")
+    @Size(min = 3, max = 30, message = "ユーザー名は3〜30文字で入力してください")
     private String username;
 
     @NotBlank(message = "メールアドレスは必須です")
@@ -21,8 +21,8 @@ public class UserRegisterDto {
     private String email;
 
     @NotBlank(message = "パスワードは必須です")
-    @Size(min = 8, max = 64, message = "パスワードは8〜64文字で入力してください")
-    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@#$%^&+=!._-]+$",
-            message = "パスワードは英字と数字を含めてください")
+    @Size(min = 6, max = 16, message = "パスワードは6〜16文字で入力してください")
+    @Pattern(regexp = "^[A-Za-z\\d@#$%^&+=!._-]+$",
+            message = "パスワードは英数字と記号(@#$%^&+=!._-)のみ使用できます")
     private String password;
 }

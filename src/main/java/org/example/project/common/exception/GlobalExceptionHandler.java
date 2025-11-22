@@ -34,13 +34,18 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
     public ResponseEntity<R> handleValidationException(Exception ex) {
-        String message = switch (ex) {
-            case MethodArgumentNotValidException manve -> Objects.requireNonNull(
-                    manve.getBindingResult().getFieldError()).getDefaultMessage();
-            case BindException bindException -> Objects.requireNonNull(
-                    bindException.getBindingResult().getFieldError()).getDefaultMessage();
-            default -> ErrorCode.VALIDATION_FAILED.getDefaultMessage();
-        };
+        String message = ErrorCode.VALIDATION_FAILED.getDefaultMessage();
+        if (ex instanceof MethodArgumentNotValidException) {
+            MethodArgumentNotValidException manve = (MethodArgumentNotValidException) ex;
+            if (manve.getBindingResult().getFieldError() != null) {
+                message = manve.getBindingResult().getFieldError().getDefaultMessage();
+            }
+        } else if (ex instanceof BindException) {
+            BindException bindException = (BindException) ex;
+            if (bindException.getBindingResult().getFieldError() != null) {
+                message = bindException.getBindingResult().getFieldError().getDefaultMessage();
+            }
+        }
         log.warn("validation error: {}", message);
         return buildErrorResponse(ErrorCode.VALIDATION_FAILED, message, HttpStatus.BAD_REQUEST);
     }
